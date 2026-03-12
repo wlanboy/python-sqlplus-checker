@@ -162,9 +162,10 @@ im angegebenen Verzeichnis:
 
 ```bash
 docker run --rm \
-  -v /pfad/zu/scripts:/scripts \
+  --entrypoint /bin/bash \
+  -v ./scripts:/scripts \
   container-registry.oracle.com/database/sqlcl:latest \
-  /bin/bash -c '
+  -c '
     errors=0; checked=0
     while IFS= read -r -d "" f; do
       rel="${f#/scripts/}"
