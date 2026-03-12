@@ -161,8 +161,9 @@ Installation nötig. Das folgende Kommando prüft **alle SQL-Dateien rekursiv**
 im angegebenen Verzeichnis:
 
 ```bash
-docker run --rm \
+ORACLE_RESTDATA_PWD=geheim docker run --rm \
   --entrypoint /bin/bash \
+  -e ORACLE_RESTDATA_PWD \
   -v ./scripts:/scripts \
   container-registry.oracle.com/database/sqlcl:latest \
   -c '
@@ -172,7 +173,7 @@ docker run --rm \
       printf "Prüfe: %s ... " "$rel"
       checked=$((checked + 1))
       output=$(printf "WHENEVER SQLERROR EXIT FAILURE\nSET FEEDBACK OFF\nSET TERMOUT OFF\nSET HEADING OFF\n@%s\nEXIT\n" "$f" \
-        | /opt/oracle/sqlcl/bin/sql -S -noupdates /nolog 2>&1)
+        | /opt/oracle/sqlcl/bin/sql -S -noupdates "restdata/${ORACLE_RESTDATA_PWD}@gmk:1521/XEPDB1" 2>&1)
       rc=$?
       if [ $rc -ne 0 ]; then
         echo "FEHLER"
@@ -197,7 +198,7 @@ docker run --rm \
 | --- | --- |
 | `-S` | Silent-Modus — keine Verbindungsbanner |
 | `-noupdates` | Deaktiviert automatische Update-Prüfung |
-| `/nolog` | Keine Datenbankverbindung — nur Syntax-Parser |
+| `restdata/$PWD@gmk:1521/XEPDB1` | Verbindung zur Oracle-Datenbank (kompiliert PL/SQL wirklich) |
 | `WHENEVER SQLERROR EXIT FAILURE` | Bricht bei erstem Fehler ab, Exit-Code 1 |
 | `SET FEEDBACK OFF` | Unterdrückt "1 row created." u. ä. |
 | `SET TERMOUT OFF` | Unterdrückt Script-Output |
@@ -211,16 +212,18 @@ sqlplus-checker ./scripts/ --no-warnings
 if [ $? -ne 0 ]; then echo "sqlplus-checker fehlgeschlagen"; exit 1; fi
 
 # Stufe 2: Oracle-Syntaxprüfung
-docker run --rm \
+ORACLE_RESTDATA_PWD=geheim docker run --rm \
+  --entrypoint /bin/bash \
+  -e ORACLE_RESTDATA_PWD \
   -v "$(pwd)/scripts":/scripts \
   container-registry.oracle.com/database/sqlcl:latest \
-  /bin/bash -c '...'   # Kommando von oben
+  -c '...'   # Kommando von oben
 if [ $? -ne 0 ]; then echo "SQLcl-Syntaxprüfung fehlgeschlagen"; exit 1; fi
 ```
 
-> **Hinweis:** SQLcl mit `/nolog` kann PL/SQL-Blöcke syntaktisch prüfen, aber
-> keine Referenzen auf Objekte (Tabellen, Typen) auflösen — dafür wäre eine
-> echte Datenbankverbindung nötig.
+> **Hinweis:** SQLcl mit echter Datenbankverbindung kompiliert PL/SQL-Blöcke
+> vollständig und kann auch Objektreferenzen (Tabellen, Typen) auflösen.
+> Das Passwort wird über die Umgebungsvariable `ORACLE_RESTDATA_PWD` übergeben.
 
 ---
 
