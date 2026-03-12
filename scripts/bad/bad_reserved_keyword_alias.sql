@@ -1,0 +1,11 @@
+WHENEVER SQLERROR EXIT FAILURE ROLLBACK
+SET DEFINE OFF
+SET SQLBLANKLINES ON
+SET SERVEROUTPUT ON
+SPOOL /tmp/bad_reserved_keyword_alias.log
+
+-- WARNING: reserved keyword DATE used as alias (must be quoted)
+SELECT sysdate AS DATE FROM DUAL;
+
+SPOOL OFF
+EXIT;
